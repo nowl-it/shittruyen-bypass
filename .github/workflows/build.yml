@@ -59,6 +59,12 @@ jobs:
               run: |
                   mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
                   mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v3
+              with:
+                  name: build-artifacts
+                  path: ./build/shittruyen-bypass-*.zip
+
     RELEASE:
         needs: BUILD
         runs-on: ubuntu-latest
@@ -67,14 +73,17 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
 
+            - name: Download Artifacts
+              uses: actions/download-artifact@v3
+              with:
+                  name: build-artifacts
+
             - name: Create Release Branch
               run: |
                   git checkout -b release/${{ github.event.inputs.version }}
                   git push origin release/${{ github.event.inputs.version }}
                   git checkout ${{ github.event.inputs.branch }}
                   git push origin ${{ github.event.inputs.branch }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Create Release
               id: create_release
@@ -86,8 +95,7 @@ jobs:
                       Release ${{ github.event.inputs.version }}
                   draft: false
                   prerelease: false
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Upload Release Asset
               uses: actions/upload-release-asset@latest
@@ -96,8 +104,7 @@ jobs:
                   asset_path: ./build/*
                   asset_name: shittruyen-bypass-*.zip
                   asset_content_type: application/zip
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Create Pull Request
               uses: peter-evans/create-pull-request@v6
@@ -110,10 +117,6 @@ jobs:
                   branch: release/${{ github.event.inputs.version }}
                   base: ${{ github.event.inputs.branch }}
                   labels: release
-                  reviewers: ''
-                  assignees: ''
-                  milestone: ''
-                  draft: false
 
             - name: Delete Release Branch
               run: |
