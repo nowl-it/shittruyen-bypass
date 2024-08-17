@@ -32,3 +32,28 @@ jobs:
         run: pnpm build
       - name: Package the extension into a zip artifact
         run: pnpm package
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          version=$(jq -r '.version' package.json)
+          echo "version=$version" >> $GITHUB_ENV
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ steps.get_version.outputs.version }}
+        with:
+          tag_name: "v${{ env.version }}"
+          release_name: "Version ${{ env.version }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload files to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/
+          asset_name: build
+          asset_content_type: application/zip
