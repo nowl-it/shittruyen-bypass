@@ -55,13 +55,18 @@ jobs:
           node-version: latest
           cache: "pnpm"
       - name: Build the extension
-        run: pnpm build
+        run: |
+          pnpm build --target=firefox
+          pnpm build --target=chrome
       - name: Package the extension into a zip artifact
-        run: pnpm package
+        run: |
+          pnpm package --target=firefox
+          pnpm package --target=chrome
       - name: Upload the artifact
         uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ needs.setup.outputs.tag_name  }}
           files: |
-            ./*.zip
+            ./build/firefox-prod.zip
+            ./build/chrome-prod.zip
