@@ -46,7 +46,7 @@ jobs:
             - name: Extract changelog for the release
               id: changelog
               run: |
-                  VERSION=${GITHUB_REF#refs/tags/}
+                  VERSION=${GITHUB_REF}
                   python -c "
                   import re
                   version = '${{ github.ref_name }}'
