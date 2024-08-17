@@ -3,32 +3,25 @@ on:
     push:
         branches:
             - main
+        tags:
+            - '*.*.*'
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to release'
+                required: true
+                default: '0.0.1'
+            branch:
+                description: 'Branch to release'
+                required: true
+                default: 'main'
 
 concurrency:
     group: ${{ github.ref }}
     cancel-in-progress: false
 
 jobs:
-    SETUP:
-        runs-on: ubuntu-latest
-        outputs:
-            version: ${{ steps.get-package.outputs.version }}
-            tag_name: v${{ steps.get-package.outputs.version }}
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup node.js (v20)
-              uses: actions/setup-node@v4
-              with:
-                  node-version: latest
-            - name: Get package info
-              id: get-package
-              run: |
-                  echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
     BUILD:
-        needs: [SETUP]
         permissions:
             contents: write
         strategy:
@@ -66,3 +59,63 @@ jobs:
               run: |
                   mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
                   mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
+    RELEASE:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Create Release Branch
+              run: |
+                  git checkout -b release/${{ github.event.inputs.version }}
+                  git push origin release/${{ github.event.inputs.version }}
+                  git checkout ${{ github.event.inputs.branch }}
+                  git push origin ${{ github.event.inputs.branch }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Create Release
+              id: create_release
+              uses: actions/create-release@latest
+              with:
+                  tag_name: ${{ github.event.inputs.version }}
+                  release_name: Release ${{ github.event.inputs.version }}
+                  body: |
+                      Release ${{ github.event.inputs.version }}
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Upload Release Asset
+              uses: actions/upload-release-asset@latest
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./build/*
+                  asset_name: shittruyen-bypass-*.zip
+                  asset_content_type: application/zip
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v6
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  commit-message: 'Release ${{ github.event.inputs.version }}'
+                  title: 'Release ${{ github.event.inputs.version }}'
+                  body: |
+                      Release ${{ github.event.inputs.version }}
+                  branch: release/${{ github.event.inputs.version }}
+                  base: ${{ github.event.inputs.branch }}
+                  labels: release
+                  reviewers: ''
+                  assignees: ''
+                  milestone: ''
+                  draft: false
+
+            - name: Delete Release Branch
+              run: |
+                  git push origin --delete release/${{ github.event.inputs.version }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
