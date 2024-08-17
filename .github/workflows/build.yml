@@ -60,6 +60,7 @@ jobs:
                   mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
                   mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
     RELEASE:
+        needs: BUILD
         runs-on: ubuntu-latest
 
         steps:
