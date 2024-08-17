@@ -67,7 +67,7 @@ jobs:
           mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
           mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
       - name: Upload the artifact
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ needs.setup.outputs.tag_name  }}
