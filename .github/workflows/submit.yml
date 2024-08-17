@@ -83,3 +83,14 @@ jobs:
           release_name: ${{ needs.setup.outputs.tag_name  }}
           draft: false
           prerelease: false
+      - name: Create a comment
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'The extension has been built and uploaded. You can download it from the [releases page](https://github.com/huyhoangg9owl/shittruyen-bypass/releases/tag/${{ needs.setup.outputs.tag_name }}).'
+            })
