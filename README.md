@@ -11,7 +11,7 @@ Extension giúp bạn truy cập Cứu Truyện mà không cần VPN!
 
 ## Installation
 
-Để sử dụng, vui lòng truy cập vào [link](/releases) sau, chọn phiên bản mình muốn.
+Để sử dụng, vui lòng truy cập vào [link](https://github.com/huyhoangg9owl/shittruyen-bypass/releases) sau, chọn phiên bản mình muốn.
 
 Có 2 phiên bản:
 
