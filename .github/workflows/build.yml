@@ -4,17 +4,7 @@ on:
         branches:
             - main
         tags:
-            - '*.*.*'
-    workflow_dispatch:
-        inputs:
-            version:
-                description: 'Version to release'
-                required: true
-                default: '0.0.1'
-            branch:
-                description: 'Branch to release'
-                required: true
-                default: 'main'
+            - 'v*'
 
 concurrency:
     group: ${{ github.ref }}
@@ -26,7 +16,9 @@ jobs:
             contents: write
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - name: Checkout the repository
+              uses: actions/checkout@v4
+
             - name: Cache pnpm modules
               uses: actions/cache@v4
               with:
@@ -34,84 +26,35 @@ jobs:
                   key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
                   restore-keys: |
                       ${{ runner.os }}-
+
             - uses: pnpm/action-setup@v4
               with:
                   version: latest
                   run_install: true
+
             - name: Use Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: latest
                   cache: 'pnpm'
+
             - name: Build the extension
               run: |
                   pnpm build --target=firefox
                   pnpm build --target=chrome
+
             - name: Package the extension into a zip artifact
               run: |
                   pnpm package --target=firefox
                   pnpm package --target=chrome
+
             - name: Rename the artifacts
               run: |
                   mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
                   mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
-            - name: Upload Artifacts
-              uses: actions/upload-artifact@v3
+
+            - name: Upload the artifacts
+              uses: actions/upload-artifact@v2
               with:
-                  name: build-artifacts
-                  path: ./build/shittruyen-bypass-*.zip
-
-            - name: Download Artifacts
-              uses: actions/download-artifact@v3
-              with:
-                  name: build-artifacts
-
-            - name: Create Release Branch
-              run: |
-                  git checkout -b release/${{ github.event.inputs.version }}
-                  git push origin release/${{ github.event.inputs.version }}
-                  git checkout ${{ github.event.inputs.branch }}
-                  git push origin ${{ github.event.inputs.branch }}
-
-            - name: Create Release
-              id: create_release
-              uses: actions/create-release@latest
-              with:
-                  tag_name: ${{ github.event.inputs.version }}
-                  release_name: Release ${{ github.event.inputs.version }}
-                  body: |
-                      Release ${{ github.event.inputs.version }}
-                  draft: false
-                  prerelease: false
-              env:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Upload Release Asset
-              uses: actions/upload-release-asset@latest
-              with:
-                  upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ./build/*
-                  asset_name: shittruyen-bypass-*.zip
-                  asset_content_type: application/zip
-              env:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Create Pull Request
-              uses: peter-evans/create-pull-request@v6
-              with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  commit-message: 'Release ${{ github.event.inputs.version }}'
-                  title: 'Release ${{ github.event.inputs.version }}'
-                  body: |
-                      Release ${{ github.event.inputs.version }}
-                  branch: release/${{ github.event.inputs.version }}
-                  base: ${{ github.event.inputs.branch }}
-                  labels: release
-
-            - name: Delete Release Branch
-              run: |
-                  git push origin --delete release/${{ github.event.inputs.version }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  name: shittruyen-bypass
+                  path: ./build/*.zip
