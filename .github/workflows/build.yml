@@ -38,6 +38,31 @@ jobs:
                   node-version: latest
                   cache: 'pnpm'
 
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: '3.x'
+
+            - name: Extract changelog for the release
+              id: changelog
+              run: |
+                  VERSION=${GITHUB_REF#refs/tags/}
+                  python -c "
+                  import re
+                  version = '${{ github.ref_name }}'
+                  with open('CHANGELOG.md', 'r') as file:
+                      changelog = file.read()
+                  pattern = rf'## \[{version}\](.*?)\n## '
+                  match = re.search(pattern, changelog, re.S)
+                  if not match:
+                      pattern = rf'## \[{version}\](.*?)$'
+                      match = re.search(pattern, changelog, re.S)
+                  if match:
+                      print('::set-output name=body::' + match.group(1).strip())
+                  else:
+                      print('::set-output name=body::Không tìm thấy phiên bản trong CHANGELOG.md')
+                  "
+
             - name: Build the extension
               run: |
                   pnpm build --target=firefox
@@ -53,8 +78,36 @@ jobs:
                   mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
                   mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
 
-            - name: Upload the artifacts
-              uses: actions/upload-artifact@v2
+            - name: Create a release
+              id: create_release
+              uses: actions/create-release@latest
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                  name: shittruyen-bypass
-                  path: ./build/*.zip
+                  tag_name: ${{ github.ref }}
+                  release_name: v${{ github.ref }}
+                  body: ${{ steps.changelog.outputs.body }}
+                  draft: false
+                  prerelease: false
+
+            - name: Upload the release assets
+              id: upload-release-asset-firefox
+              uses: actions/upload-release-asset@latest
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./build/shittruyen-bypass-firefox.zip
+                  asset_name: shittruyen-bypass-firefox.zip
+                  asset_content_type: application/zip
+
+            - name: Upload the release assets
+              id: upload-release-asset-chrome
+              uses: actions/upload-release-asset@latest
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./build/shittruyen-bypass-chrome.zip
+                  asset_name: shittruyen-bypass-chrome.zip
+                  asset_content_type: application/zip
