@@ -62,6 +62,10 @@ jobs:
         run: |
           pnpm package --target=firefox
           pnpm package --target=chrome
+      - name: Rename the artifacts
+        run: |
+          mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
+          mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
       - name: Upload the artifact
         uses: softprops/action-gh-release@v1
         with:
@@ -70,3 +74,4 @@ jobs:
           files: |
             ./build/firefox-prod.zip
             ./build/chrome-prod.zip
+          draft: false
