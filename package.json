@@ -8,7 +8,7 @@
     "dev": "plasmo dev",
     "build": "plasmo build",
     "package": "plasmo package",
-    "version": "auto-changelog -p && git add CHANGELOG.md"
+    "version": "auto-changelog -p"
   },
   "dependencies": {
     "plasmo": "0.88.0",
@@ -33,5 +33,11 @@
       "https://nettrom.com/*",
       "https://cuutruyent9sv7.xyz/*"
     ]
+  },
+  "auto-changelog": {
+    "output": "HISTORY.md",
+    "template": "keepachangelog",
+    "unreleased": true,
+    "commitLimit": false
   }
 }
