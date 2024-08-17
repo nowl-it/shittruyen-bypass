@@ -11,7 +11,29 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
+    setup:
+        runs-on: ubuntu-latest
+        outputs:
+            version: ${{ steps.get-package.outputs.version }}
+            description: ${{ steps.get-package.outputs.description }}
+            license: ${{ steps.get-package.outputs.license }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup node.js (v20)
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            - name: Get package info
+              id: get-package
+              run: |
+                  echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+                  echo "description=$(node -p "require('./package.json').description")" >> $GITHUB_OUTPUT
+                  echo "license=$(node -p "require('./package.json').license")" >> $GITHUB_OUTPUT
+
     build:
+        needs: setup
         permissions:
             contents: write
         runs-on: ubuntu-latest
@@ -38,6 +60,11 @@ jobs:
                   node-version: latest
                   cache: 'pnpm'
 
+            - name: Setup Github env
+              run: |
+                  echo "GITHUB_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+                  echo "GITHUB_REF_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
@@ -48,13 +75,13 @@ jobs:
               run: |
                   python -c "
                   import re
-                  version = '${{ github.ref_name }}'
+                  version = '${{ needs.setup.outputs.version }}'
                   with open('CHANGELOG.md', 'r') as file:
                       changelog = file.read()
-                  pattern = rf'## \[{version}\](.*?)\n## '
+                  pattern = rf'## \[{version}\]\n## '
                   match = re.search(pattern, changelog, re.S)
                   if not match:
-                      pattern = rf'## \[{version}\](.*?)$'
+                      pattern = rf'## \[{version}\]$'
                       match = re.search(pattern, changelog, re.S)
                   if match:
                       print('::set-output name=body::' + match.group(1).strip())
@@ -83,8 +110,8 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                  tag_name: ${{ github.ref_name }}
-                  release_name: v${{ github.ref_name }}
+                  tag_name: ${{ needs.setup.outputs.version }}
+                  release_name: v${{ needs.setup.outputs.version }}
                   body: ${{ steps.changelog.outputs.body }}
                   draft: false
                   prerelease: false
