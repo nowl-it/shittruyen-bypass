@@ -1,0 +1,73 @@
+name: Create Release Branch
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to release'
+                required: true
+                default: '0.0.1'
+            branch:
+                description: 'Branch to release'
+                required: true
+                default: 'main'
+    push:
+        tags:
+            - 'v*.*.*'
+jobs:
+    createrelease:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Create Release Branch
+              run: |
+                  git checkout -b release/v${{ github.event.inputs.version }}
+                  git push origin release/v${{ github.event.inputs.version }}
+                  git checkout v${{ github.event.inputs.branch }}
+                  git push origin v${{ github.event.inputs.branch }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Create Release
+              id: create_release
+              uses: actions/create-release@latest
+              with:
+                  tag_name: v${{ github.event.inputs.version }}
+                  release_name: Release v${{ github.event.inputs.version }}
+                  body: |
+                      Release v${{ github.event.inputs.version }}
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Upload Release Asset
+              uses: actions/upload-release-asset@latest
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./build/*
+                  asset_name: shittruyen-bypass-*.zip
+                  asset_content_type: application/zip
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v6
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  commit-message: 'Release v${{ github.event.inputs.version }}'
+                  title: 'Release v${{ github.event.inputs.version }}'
+                  body: |
+                      Release v${{ github.event.inputs.version }}
+                  branch: release/v${{ github.event.inputs.version }}
+                  base: ${{ github.event.inputs.branch }}
+                  labels: release
+                  reviewers: ''
+                  assignees: ''
+                  milestone: ''
+                  draft: false
+
+            - name: Done
+              run: echo "Done"

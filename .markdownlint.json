@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint/v0.34.0/schema/markdownlint-config-schema.json",
+  "headings": true,
+  "no-duplicate-heading": false,
+  "siblings_only": true
+}

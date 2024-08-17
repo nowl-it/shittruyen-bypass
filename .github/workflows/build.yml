@@ -1,0 +1,68 @@
+name: 'Build and package extension'
+on:
+    push:
+        branches:
+            - main
+
+concurrency:
+    group: ${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    SETUP:
+        runs-on: ubuntu-latest
+        outputs:
+            version: ${{ steps.get-package.outputs.version }}
+            tag_name: v${{ steps.get-package.outputs.version }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup node.js (v20)
+              uses: actions/setup-node@v4
+              with:
+                  node-version: latest
+            - name: Get package info
+              id: get-package
+              run: |
+                  echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+    BUILD:
+        needs: [SETUP]
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [ubuntu-latest]
+        runs-on: ${{ matrix.platform }}
+        steps:
+            - uses: actions/checkout@v4
+            - name: Cache pnpm modules
+              uses: actions/cache@v4
+              with:
+                  path: ~/.pnpm-store
+                  key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: latest
+                  run_install: true
+            - name: Use Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: latest
+                  cache: 'pnpm'
+            - name: Build the extension
+              run: |
+                  pnpm build --target=firefox
+                  pnpm build --target=chrome
+            - name: Package the extension into a zip artifact
+              run: |
+                  pnpm package --target=firefox
+                  pnpm package --target=chrome
+            - name: Rename the artifacts
+              run: |
+                  mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
+                  mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
