@@ -21,14 +21,10 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
-    BUILD:
+    build:
         permissions:
             contents: write
-        strategy:
-            fail-fast: false
-            matrix:
-                platform: [ubuntu-latest]
-        runs-on: ${{ matrix.platform }}
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
             - name: Cache pnpm modules
@@ -64,14 +60,6 @@ jobs:
               with:
                   name: build-artifacts
                   path: ./build/shittruyen-bypass-*.zip
-
-    RELEASE:
-        needs: BUILD
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
 
             - name: Download Artifacts
               uses: actions/download-artifact@v3
