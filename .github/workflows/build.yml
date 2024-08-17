@@ -84,8 +84,8 @@ jobs:
               uses: yashanand1910/standard-release-notes@v1.2.1
               id: get_release_notes
               with:
-                  changelog_path: ./CHANGELOG.md # Optional
-                  version: ${{ github.ref }} # Required
+                  changelog_path: ./CHANGELOG.md
+                  version: ${{ needs.setup.outputs.version }}
 
             - name: Create a release
               id: create_release
