@@ -3,13 +3,39 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build:
+  SETUP:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-package.outputs.version }}
+      tag_name: v${{ steps.get-package.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest
+      - name: Get package info
+        id: get-package
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+  BUILD:
+    needs: [SETUP]
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
       - name: Cache pnpm modules
@@ -32,28 +58,10 @@ jobs:
         run: pnpm build
       - name: Package the extension into a zip artifact
         run: pnpm package
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          version=$(jq -r '.version' package.json)
-          echo "version=$version" >> $GITHUB_ENV
-
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          version: ${{ steps.get_version.outputs.version }}
+      - name: Upload the artifact
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: "v${{ env.version }}"
-          release_name: "Version ${{ env.version }}"
-          draft: false
-          prerelease: false
-
-      - name: Upload files to release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/
-          asset_name: build
-          asset_content_type: application/zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ needs.setup.outputs.tag_name  }}
+          files: |
+            ./*.zip
