@@ -65,35 +65,6 @@ jobs:
                   echo "GITHUB_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
                   echo "GITHUB_REF_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-            - name: Set up Python
-              uses: actions/setup-python@v4
-              with:
-                  python-version: '3.10'
-
-            - name: Extract changelog for the release
-              id: changelog
-              run: |
-                  python -c "
-                  import re
-                  version = '${{ needs.setup.outputs.version }}'
-                  with open('CHANGELOG.md', 'r') as file:
-                      changelog = file.read()
-                  pattern = rf'## \[{version}\](.*)\n## '
-                  match = re.search(pattern, changelog, re.S)
-                  if not match:
-                      pattern = rf'## \[{version}\](.*)$'
-                      match = re.search(pattern, changelog, re.S)
-                  if match:
-                      with open('/tmp/changelog.md', 'w') as f:
-                          f.write(match.group(1).strip())
-                  else:
-                      with open('/tmp/changelog.md', 'w') as f:
-                          f.write('Không tìm thấy phiên bản trong CHANGELOG.md')
-                  "
-
-            - name: Set Changelog
-              run: echo "body=$(cat /tmp/changelog.md)" >> $GITHUB_ENV
-
             - name: Build the extension
               run: |
                   pnpm build --target=firefox
@@ -109,6 +80,13 @@ jobs:
                   mv ./build/firefox-prod.zip ./build/shittruyen-bypass-firefox.zip
                   mv ./build/chrome-prod.zip ./build/shittruyen-bypass-chrome.zip
 
+            - name: Setup release
+              uses: yashanand1910/standard-release-notes@v1.2.1
+              id: get_release_notes
+              with:
+                  changelog_path: ./CHANGELOG.md # Optional
+                  version: ${{ github.ref }} # Required
+
             - name: Create a release
               id: create_release
               uses: actions/create-release@latest
@@ -118,7 +96,7 @@ jobs:
                   tag_name: ${{ needs.setup.outputs.version }}
                   release_name: v${{ needs.setup.outputs.version }}
                   body: |
-                      ${{ steps.changelog.outputs.body }}
+                      ${{ steps.get_release_notes.outputs.release_notes }}
                   draft: false
                   prerelease: false
 
