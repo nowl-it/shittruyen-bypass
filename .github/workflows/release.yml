@@ -14,7 +14,7 @@ on:
         tags:
             - 'v*.*.*'
 jobs:
-    createrelease:
+    create_release:
         runs-on: ubuntu-latest
 
         steps:
