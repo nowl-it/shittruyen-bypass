@@ -23,10 +23,10 @@ jobs:
 
             - name: Create Release Branch
               run: |
-                  git checkout -b release/v${{ github.event.inputs.version }}
-                  git push origin release/v${{ github.event.inputs.version }}
-                  git checkout v${{ github.event.inputs.branch }}
-                  git push origin v${{ github.event.inputs.branch }}
+                  git checkout -b release/${{ github.event.inputs.version }}
+                  git push origin release/${{ github.event.inputs.version }}
+                  git checkout ${{ github.event.inputs.branch }}
+                  git push origin ${{ github.event.inputs.branch }}
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -34,10 +34,10 @@ jobs:
               id: create_release
               uses: actions/create-release@latest
               with:
-                  tag_name: v${{ github.event.inputs.version }}
-                  release_name: Release v${{ github.event.inputs.version }}
+                  tag_name: ${{ github.event.inputs.version }}
+                  release_name: Release ${{ github.event.inputs.version }}
                   body: |
-                      Release v${{ github.event.inputs.version }}
+                      Release ${{ github.event.inputs.version }}
                   draft: false
                   prerelease: false
               env:
@@ -57,11 +57,11 @@ jobs:
               uses: peter-evans/create-pull-request@v6
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  commit-message: 'Release v${{ github.event.inputs.version }}'
-                  title: 'Release v${{ github.event.inputs.version }}'
+                  commit-message: 'Release ${{ github.event.inputs.version }}'
+                  title: 'Release ${{ github.event.inputs.version }}'
                   body: |
-                      Release v${{ github.event.inputs.version }}
-                  branch: release/v${{ github.event.inputs.version }}
+                      Release ${{ github.event.inputs.version }}
+                  branch: release/${{ github.event.inputs.version }}
                   base: ${{ github.event.inputs.branch }}
                   labels: release
                   reviewers: ''
