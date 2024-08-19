@@ -1,7 +1,7 @@
 {
   "name": "shittruyen-bypass",
   "displayName": "Shittruyen Bypass",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Truy cập vào Cứt Truyện mà không cần VPN",
   "author": "9OwL (tranhuyhoang9owl@gmail.com)",
   "scripts": {
@@ -30,6 +30,11 @@
       "https://hetcuutruyen.net/*",
       "https://nettrom.com/*",
       "https://cuutruyent9sv7.xyz/*"
-    ]
+    ],
+    "browser_specific_settings": {
+      "gecko": {
+        "id": "shittruyen-bypass@9owl"
+      }
+    }
   }
 }
